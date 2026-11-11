@@ -78,7 +78,7 @@
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             }
         } catch (error) {
-            aiBubble.textContent = "连接后端失败，请检查 server.py 是否运行。";
+            aiBubble.textContent = "哎呀，网络开小差了，请稍后再试～。";
         } finally {
             sendBtn.disabled = false;
             promptInput.focus();
