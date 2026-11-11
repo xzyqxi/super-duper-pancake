@@ -56,7 +56,7 @@
 
         try {
             // 3. 发送 POST 请求到后端
-            const response = await fetch('https://5740f23c.r21.cpolar.top', {
+            const response = await fetch('https://5740f23c.r21.cpolar.top/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: prompt, session_id: "web_user_1" })
