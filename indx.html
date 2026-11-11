@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>原生 AI Agent 前端</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; padding-top: 50px; }
+        #chat-container { width: 600px; height: 600px; background: white; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        #messages { flex: 1; padding: 20px; overflow-y: auto; }
+        .msg { margin-bottom: 15px; padding: 10px 15px; border-radius: 8px; max-width: 80%; line-height: 1.5; white-space: pre-wrap;}
+        .user { background: #007bff; color: white; align-self: flex-end; margin-left: auto; }
+        .ai { background: #e9ecef; color: #333; align-self: flex-start; }
+        #input-area { display: flex; padding: 15px; border-top: 1px solid #ddd; }
+        #prompt { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; font-size: 16px; }
+        #send-btn { padding: 10px 20px; margin-left: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        #send-btn:disabled { background: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="messages"></div>
+    <div id="input-area">
+        <input type="text" id="prompt" placeholder="请输入您的问题..." autocomplete="off">
+        <button id="send-btn">发送</button>
+    </div>
+</div>
+
+<script>
+    const messagesDiv = document.getElementById('messages');
+    const promptInput = document.getElementById('prompt');
+    const sendBtn = document.getElementById('send-btn');
+
+    // 添加气泡的函数
+    function addMessage(text, role) {
+        const div = document.createElement('div');
+        div.className = `msg ${role}`;
+        div.textContent = text;
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        return div;
+    }
+
+    // 核心：发送请求并处理流式响应
+    async function sendMessage() {
+        const prompt = promptInput.value.trim();
+        if (!prompt) return;
+
+        // 1. 页面显示用户的话
+        addMessage(prompt, 'user');
+        promptInput.value = '';
+        sendBtn.disabled = true;
+
+        // 2. 创建一个空的气泡，准备接收 AI 的回答
+        const aiBubble = addMessage('', 'ai');
+
+        try {
+            // 3. 发送 POST 请求到后端
+            const response = await fetch('https://5740f23c.r21.cpolar.top', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt, session_id: "web_user_1" })
+            });
+
+            // 4. 获取流式读取器（读取那一行行 yield 出来的字）
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                // 把字节流解码成文字
+                const text = decoder.decode(value, { stream: true });
+
+                // 追加到页面的气泡里（这就是打字机效果！）
+                aiBubble.textContent += text;
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+        } catch (error) {
+            aiBubble.textContent = "连接后端失败，请检查 server.py 是否运行。";
+        } finally {
+            sendBtn.disabled = false;
+            promptInput.focus();
+        }
+    }
+
+    // 绑定点击和回车事件
+    sendBtn.addEventListener('click', sendMessage);
+    promptInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+</script>
+
+</body>
+</html>
